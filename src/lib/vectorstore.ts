@@ -1,10 +1,12 @@
-// In-memory vector store with cosine similarity search
+// In-memory vector store with TF-IDF cosine similarity search
 // For production, replace with pgvector, Pinecone, or ChromaDB
+
+import { SparseVector, cosineSimilarity } from "./embeddings";
 
 export interface VectorDocument {
   id: string;
   content: string;
-  embedding: number[];
+  embedding: SparseVector;
   metadata: {
     source: string;
     chunkIndex: number;
@@ -28,7 +30,7 @@ class VectorStore {
     this.documents.push(...docs);
   }
 
-  search(queryEmbedding: number[], topK: number = 5): SearchResult[] {
+  search(queryEmbedding: SparseVector, topK: number = 5): SearchResult[] {
     if (this.documents.length === 0) return [];
 
     const scored = this.documents.map((doc) => ({
@@ -53,7 +55,9 @@ class VectorStore {
   }
 
   getSources(): string[] {
-    return [...new Set(this.documents.map((d) => d.metadata.source))];
+    const sources = new Set<string>();
+    this.documents.forEach((d) => sources.add(d.metadata.source));
+    return Array.from(sources);
   }
 
   getStats() {
@@ -67,25 +71,6 @@ class VectorStore {
   clear(): void {
     this.documents = [];
   }
-}
-
-function cosineSimilarity(a: number[], b: number[]): number {
-  if (a.length !== b.length) return 0;
-
-  let dotProduct = 0;
-  let normA = 0;
-  let normB = 0;
-
-  for (let i = 0; i < a.length; i++) {
-    dotProduct += a[i] * b[i];
-    normA += a[i] * a[i];
-    normB += b[i] * b[i];
-  }
-
-  const magnitude = Math.sqrt(normA) * Math.sqrt(normB);
-  if (magnitude === 0) return 0;
-
-  return dotProduct / magnitude;
 }
 
 // Singleton instance for the server

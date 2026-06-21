@@ -14,7 +14,18 @@ import {
   Sparkles,
   BookOpen,
   Zap,
+  ChevronDown,
+  Cpu,
 } from "lucide-react";
+
+// Model options (Groq free tier)
+const MODEL_OPTIONS = [
+  { id: "llama-3.3-70b-versatile", name: "Llama 3.3 70B", badge: "Best" },
+  { id: "llama-3.1-8b-instant", name: "Llama 3.1 8B", badge: "Fast" },
+  { id: "gemma2-9b-it", name: "Gemma 2 9B", badge: "Google" },
+  { id: "llama3-70b-8192", name: "Llama 3 70B", badge: "Meta" },
+  { id: "llama3-8b-8192", name: "Llama 3 8B", badge: "Meta" },
+];
 
 // Types
 interface Message {
@@ -347,6 +358,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [docStats, setDocStats] = useState<DocStats | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [selectedModel, setSelectedModel] = useState(MODEL_OPTIONS[0].id);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = useCallback(() => {
@@ -381,7 +393,7 @@ export default function Home() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: userMsg.content }),
+        body: JSON.stringify({ question: userMsg.content, model: selectedModel }),
       });
       const data = await res.json();
 
@@ -471,7 +483,7 @@ export default function Home() {
         {/* Tech stack footer */}
         <div className="p-4 border-t border-[var(--border)]">
           <div className="flex flex-wrap gap-1.5">
-            {["Next.js", "OpenAI", "RAG", "pgvector"].map((tag) => (
+            {["Next.js", "Groq", "RAG", "TF-IDF"].map((tag) => (
               <span
                 key={tag}
                 className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--bg-card)] text-[var(--text-secondary)] border border-[var(--border)]"
@@ -499,7 +511,29 @@ export default function Home() {
               <span className="text-sm font-medium">Chat</span>
             </div>
           </div>
-          <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)]">
+          <div className="flex items-center gap-3">
+            {/* Model Selector */}
+            <div className="relative">
+              <div className="flex items-center gap-1.5 text-xs bg-[var(--bg-card)] border border-[var(--border)] rounded-lg px-3 py-1.5 cursor-pointer hover:border-accent/50 transition-colors">
+                <Cpu className="w-3.5 h-3.5 text-accent" />
+                <span className="font-medium">
+                  {MODEL_OPTIONS.find((m) => m.id === selectedModel)?.name}
+                </span>
+                <ChevronDown className="w-3 h-3 text-[var(--text-secondary)]" />
+              </div>
+              <select
+                value={selectedModel}
+                onChange={(e) => setSelectedModel(e.target.value)}
+                className="absolute inset-0 opacity-0 cursor-pointer"
+              >
+                {MODEL_OPTIONS.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.name} ({m.badge})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)]">
             {hasDocs ? (
               <>
                 <span className="w-2 h-2 rounded-full bg-emerald-400" />
@@ -512,6 +546,7 @@ export default function Home() {
                 No documents
               </>
             )}
+          </div>
           </div>
         </header>
 
@@ -562,8 +597,8 @@ export default function Home() {
             </button>
           </div>
           <p className="text-center text-[10px] text-[var(--text-secondary)] mt-2 opacity-50">
-            Powered by RAG • Answers grounded in your documents • OpenAI
-            Embeddings + GPT-4o-mini
+            Powered by RAG • Answers grounded in your documents • Groq
+            LLM + TF-IDF Retrieval
           </p>
         </div>
       </main>
